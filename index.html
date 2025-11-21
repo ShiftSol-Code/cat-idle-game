@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Cat Idle Game</title>
+    <link rel="stylesheet" href="./style.css" />
+  </head>
+  <body>
+    <div id="app">
+      <div id="game-container">
+        <!-- Stats Panel -->
+        <div id="stats-panel">
+          <div class="stat-row">
+            <span class="stat-label">Hunger</span>
+            <div class="progress-bar">
+              <div id="hunger-bar" class="progress-fill" style="width: 100%"></div>
+            </div>
+            <span id="hunger-text" class="stat-value">100%</span>
+          </div>
+          <div class="stat-row">
+            <span class="stat-label">Thirst</span>
+            <div class="progress-bar">
+              <div id="thirst-bar" class="progress-fill" style="width: 100%"></div>
+            </div>
+            <span id="thirst-text" class="stat-value">100%</span>
+          </div>
+          <div class="stat-row">
+            <span class="stat-label">Fun</span>
+            <div class="progress-bar">
+              <div id="fun-bar" class="progress-fill" style="width: 100%"></div>
+            </div>
+            <span id="fun-text" class="stat-value">100%</span>
+          </div>
+        </div>
+
+        <!-- Cat Character -->
+        <div id="cat-container">
+          <img id="cat-image" src="/cat_happy.png" alt="Cat" />
+        </div>
+
+        <!-- Controls -->
+        <div id="controls">
+          <button id="feed-btn" class="action-btn">Feed (+20)</button>
+          <button id="water-btn" class="action-btn">Water (+25)</button>
+        </div>
+        
+        <!-- Game Over Overlay -->
+        <div id="game-over" class="hidden">
+            <h1>Game Over</h1>
+            <button id="restart-btn">Restart</button>
+        </div>
+      </div>
+    </div>
+    <script type="module" src="/src/main.js"></script>
+  </body>
+</html>

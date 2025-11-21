@@ -1,0 +1,177 @@
+:root {
+  --primary-color: #ff9a9e;
+  --secondary-color: #fad0c4;
+  --text-color: #333;
+  --bar-bg: #eee;
+  --bar-fill: #76c7c0;
+  --danger-color: #ff6b6b;
+}
+
+body {
+  margin: 0;
+  padding: 0;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  overflow: hidden;
+  background-color: #f0f0f0;
+}
+
+#app {
+  width: 100vw;
+  height: 100vh;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+#game-container {
+  width: 100%;
+  height: 100%;
+  max-width: 800px; /* Optional constraint for desktop */
+  position: relative;
+  background-image: url('/background.png');
+  background-size: cover;
+  background-position: center;
+  box-shadow: 0 0 20px rgba(0,0,0,0.2);
+  overflow: hidden;
+}
+
+/* Stats Panel */
+#stats-panel {
+  position: absolute;
+  top: 20px;
+  right: 20px;
+  background: rgba(255, 255, 255, 0.8);
+  padding: 15px;
+  border-radius: 12px;
+  backdrop-filter: blur(5px);
+  width: 220px;
+  z-index: 10;
+}
+
+.stat-row {
+  display: flex;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.stat-label {
+  width: 60px;
+  font-weight: bold;
+  font-size: 14px;
+  color: var(--text-color);
+}
+
+.progress-bar {
+  flex-grow: 1;
+  height: 10px;
+  background-color: var(--bar-bg);
+  border-radius: 5px;
+  margin: 0 10px;
+  overflow: hidden;
+}
+
+.progress-fill {
+  height: 100%;
+  background-color: var(--bar-fill);
+  transition: width 0.5s ease, background-color 0.3s;
+}
+
+.stat-value {
+  width: 40px;
+  font-size: 12px;
+  text-align: right;
+}
+
+/* Cat Character */
+#cat-container {
+  position: absolute;
+  bottom: 100px; /* Above controls */
+  left: 50%;
+  transform: translateX(-50%);
+  width: 300px;
+  height: 300px;
+  display: flex;
+  justify-content: center;
+  align-items: flex-end;
+  pointer-events: none; /* Let clicks pass through to container for background clicks, but we need to handle cat clicks */
+}
+
+#cat-image {
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+  pointer-events: auto; /* Re-enable pointer events for the cat */
+  cursor: pointer;
+  transition: transform 0.1s;
+}
+
+#cat-image:active {
+  transform: scale(0.95);
+}
+
+/* Controls */
+#controls {
+  position: absolute;
+  bottom: 20px;
+  left: 0;
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  gap: 20px;
+  z-index: 10;
+}
+
+.action-btn {
+  padding: 12px 24px;
+  font-size: 16px;
+  font-weight: bold;
+  border: none;
+  border-radius: 25px;
+  background-color: white;
+  color: var(--text-color);
+  box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.action-btn:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 8px rgba(0,0,0,0.15);
+}
+
+.action-btn:active:not(:disabled) {
+  transform: translateY(0);
+}
+
+.action-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  background-color: #ddd;
+}
+
+/* Game Over */
+#game-over {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0,0,0,0.7);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  color: white;
+  z-index: 100;
+}
+
+.hidden {
+  display: none !important;
+}
+
+#restart-btn {
+  padding: 10px 20px;
+  font-size: 18px;
+  margin-top: 20px;
+  cursor: pointer;
+}
