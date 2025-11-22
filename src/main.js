@@ -17,6 +17,53 @@ const state = {
 let hungerBar, hungerText, thirstBar, thirstText, funBar, funText;
 let catImage, feedBtn, waterBtn, gameContainer, gameOverScreen, restartBtn;
 let coinCount, shopBtn, shopModal, closeShopBtn, shopItemsContainer, inventoryContainer;
+let settingsBtn, settingsModal, closeSettingsBtn, volumeSlider, bgmToggle, sfxToggle, quitBtn;
+
+// Audio
+class SoundPool {
+  constructor(src, size = 5) {
+    this.pool = [];
+    this.index = 0;
+    this.muted = false;
+    for (let i = 0; i < size; i++) {
+      this.pool.push(new Audio(src));
+    }
+  }
+
+  play() {
+    if (this.muted) return;
+    const sound = this.pool[this.index];
+    sound.currentTime = 0;
+    sound.play().catch(e => console.warn('Audio play failed:', e));
+    this.index = (this.index + 1) % this.pool.length;
+  }
+
+  setVolume(volume) {
+    this.pool.forEach(sound => {
+      sound.volume = volume;
+    });
+  }
+
+  setMuted(muted) {
+    this.muted = muted;
+  }
+}
+
+const popSound = new SoundPool('/Pop1.mp3', 5);
+const coinSound = new SoundPool('/CashRegister.mp3', 5);
+const bgm = new Audio('/Music/MyMusic1.mp3');
+bgm.loop = true;
+bgm.volume = 0.5;
+
+function playBGM() {
+  bgm.play().then(() => {
+    // Autoplay started successfully
+    document.body.removeEventListener('click', playBGM);
+  }).catch(e => {
+    console.log('BGM autoplay blocked, waiting for interaction');
+    // Add listener if not already added (though playBGM is the listener itself, so it's fine)
+  });
+}
 
 // Cooldowns
 let feedCooldown = false;
@@ -64,6 +111,14 @@ function init() {
   closeShopBtn = document.getElementById('close-shop-btn');
   shopItemsContainer = document.getElementById('shop-items');
   inventoryContainer = document.getElementById('inventory-container');
+
+  settingsBtn = document.getElementById('settings-btn');
+  settingsModal = document.getElementById('settings-modal');
+  closeSettingsBtn = document.getElementById('close-settings-btn');
+  volumeSlider = document.getElementById('volume-slider');
+  bgmToggle = document.getElementById('bgm-toggle');
+  sfxToggle = document.getElementById('sfx-toggle');
+  quitBtn = document.getElementById('quit-btn');
 
   if (!hungerBar || !feedBtn || !gameContainer) {
     console.error('Critical DOM elements missing!');
@@ -120,6 +175,17 @@ function init() {
 
   shopBtn.addEventListener('click', toggleShop);
   closeShopBtn.addEventListener('click', toggleShop);
+
+  settingsBtn.addEventListener('click', toggleSettings);
+  closeSettingsBtn.addEventListener('click', toggleSettings);
+  volumeSlider.addEventListener('input', (e) => updateVolume(e.target.value));
+  bgmToggle.addEventListener('change', (e) => toggleBGM(e.target.checked));
+  sfxToggle.addEventListener('change', (e) => toggleSFX(e.target.checked));
+  quitBtn.addEventListener('click', quitGame);
+
+  // Try to play BGM
+  playBGM();
+  document.body.addEventListener('click', playBGM, { once: true });
 
   // Initial Render
   renderInventory();
@@ -298,12 +364,14 @@ function handleInteraction(e) {
   if (e.target === catImage) {
     state.fun = Math.min(100, state.fun + petAmount);
     showFloatingText(e.clientX, e.clientY, `+${petAmount} 재미`);
+    popSound.play();
   } else {
     // Don't trigger on buttons
     if (e.target.closest('button')) return;
     
     state.fun = Math.min(100, state.fun + bgAmount);
     showFloatingText(e.clientX, e.clientY, `+${bgAmount} 재미`);
+    popSound.play();
   }
   
   updateUI();
@@ -359,6 +427,7 @@ function generateCoins() {
     if (!bonusGiven) {
       const bonus = (config && config.bonus && config.bonus.allMax) || 10;
       state.coins += bonus;
+      coinSound.play();
       showFloatingText(window.innerWidth / 2, window.innerHeight / 2, `보너스 +${bonus} 코인!`);
       bonusGiven = true;
     }
@@ -377,15 +446,23 @@ function generateCoins() {
   if (minStat >= max) {
     // > 90%: 2 coins every 1s
     state.coins += 2;
+    coinSound.play();
   } else if (minStat >= high) {
     // > 60%: 1 coin every 1s
     state.coins++;
+    coinSound.play();
   } else if (minStat >= mid) {
     // > 30%: 1 coin every 2s
-    if (coinTick % 2 === 0) state.coins++;
+    if (coinTick % 2 === 0) {
+      state.coins++;
+      coinSound.play();
+    }
   } else if (minStat >= low) {
     // > 10%: 1 coin every 3s
-    if (coinTick % 3 === 0) state.coins++;
+    if (coinTick % 3 === 0) {
+      state.coins++;
+      coinSound.play();
+    }
   }
   
   updateCoinUI();
@@ -497,6 +574,48 @@ function useItem(index) {
   state.inventory.splice(index, 1);
   renderInventory();
   renderShop(); // Update shop UI (in case upgrade status changed)
+}
+
+function toggleSettings() {
+  const isHidden = settingsModal.classList.contains('hidden');
+  if (isHidden) {
+    settingsModal.classList.remove('hidden');
+  } else {
+    settingsModal.classList.add('hidden');
+  }
+}
+
+function updateVolume(value) {
+  bgm.volume = value;
+  popSound.setVolume(value);
+  coinSound.setVolume(value);
+}
+
+function toggleBGM(isChecked) {
+  if (isChecked) {
+    bgm.play().catch(e => console.warn('BGM play failed:', e));
+  } else {
+    bgm.pause();
+  }
+}
+
+function toggleSFX(isChecked) {
+  popSound.setMuted(!isChecked);
+  coinSound.setMuted(!isChecked);
+}
+
+function quitGame() {
+  state.gameOver = true;
+  clearInterval(gameInterval);
+  clearInterval(coinInterval);
+  bgm.pause();
+  
+  settingsModal.classList.add('hidden');
+  const finalScoreEl = document.getElementById('final-score');
+  if (finalScoreEl) {
+    finalScoreEl.textContent = `그동안 적립된 코인은 ${state.coins}개 입니다`;
+  }
+  gameOverScreen.classList.remove('hidden');
 }
 
 // Start Initialization

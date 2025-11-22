@@ -80,6 +80,40 @@
       </div>
     </div>
   </div>
+
+  <!-- Settings Button -->
+  <button id="settings-btn" class="icon-btn">⚙️</button>
+
+  <!-- Settings Modal -->
+  <div id="settings-modal" class="modal hidden">
+    <div class="modal-content">
+      <h2>설정</h2>
+
+      <div class="setting-item">
+        <label>볼륨</label>
+        <input type="range" id="volume-slider" min="0" max="1" step="0.1" value="0.5">
+      </div>
+
+      <div class="setting-item">
+        <label>
+          <input type="checkbox" id="bgm-toggle" checked> BGM 켜기
+        </label>
+      </div>
+
+      <div class="setting-item">
+        <label>
+          <input type="checkbox" id="sfx-toggle" checked> 효과음 켜기
+        </label>
+      </div>
+
+      <div class="setting-item">
+        <button id="quit-btn" class="danger-btn">게임 끝내기</button>
+      </div>
+
+      <button id="close-settings-btn" class="close-btn">닫기</button>
+    </div>
+  </div>
+
   <script type="module" src="/src/main.js"></script>
 </body>
 
