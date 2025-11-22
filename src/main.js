@@ -1,3 +1,8 @@
+
+import config from './config.json';
+
+console.log('Config loaded:', config);
+
 // Game State
 const state = {
   hunger: 100,
@@ -8,28 +13,10 @@ const state = {
   gameOver: false,
 };
 
-// DOM Elements
-const hungerBar = document.getElementById('hunger-bar');
-const hungerText = document.getElementById('hunger-text');
-const thirstBar = document.getElementById('thirst-bar');
-const thirstText = document.getElementById('thirst-text');
-const funBar = document.getElementById('fun-bar');
-const funText = document.getElementById('fun-text');
-
-const catImage = document.getElementById('cat-image');
-const feedBtn = document.getElementById('feed-btn');
-const waterBtn = document.getElementById('water-btn');
-const gameContainer = document.getElementById('game-container');
-const gameOverScreen = document.getElementById('game-over');
-const restartBtn = document.getElementById('restart-btn');
-
-// Shop Elements
-const coinCount = document.getElementById('coin-count');
-const shopBtn = document.getElementById('shop-btn');
-const shopModal = document.getElementById('shop-modal');
-const closeShopBtn = document.getElementById('close-shop-btn');
-const shopItemsContainer = document.getElementById('shop-items');
-const inventoryContainer = document.getElementById('inventory-container');
+// DOM Elements (initialized in init)
+let hungerBar, hungerText, thirstBar, thirstText, funBar, funText;
+let catImage, feedBtn, waterBtn, gameContainer, gameOverScreen, restartBtn;
+let coinCount, shopBtn, shopModal, closeShopBtn, shopItemsContainer, inventoryContainer;
 
 // Cooldowns
 let feedCooldown = false;
@@ -42,10 +29,99 @@ const DECAY_INTERVAL = 1000; // ms
 // Game Loop
 let gameInterval;
 
+// Config Values
+let feedAmount = 20;
+let waterAmount = 25;
+let shopItems = [];
+
+function init() {
+  console.log('Initializing game...');
+  
+  // Initialize DOM Elements
+  hungerBar = document.getElementById('hunger-bar');
+  hungerText = document.getElementById('hunger-text');
+  thirstBar = document.getElementById('thirst-bar');
+  thirstText = document.getElementById('thirst-text');
+  funBar = document.getElementById('fun-bar');
+  funText = document.getElementById('fun-text');
+
+  catImage = document.getElementById('cat-image');
+  feedBtn = document.getElementById('feed-btn');
+  waterBtn = document.getElementById('water-btn');
+  gameContainer = document.getElementById('game-container');
+  gameOverScreen = document.getElementById('game-over');
+  restartBtn = document.getElementById('restart-btn');
+
+  coinCount = document.getElementById('coin-count');
+  shopBtn = document.getElementById('shop-btn');
+  shopModal = document.getElementById('shop-modal');
+  closeShopBtn = document.getElementById('close-shop-btn');
+  shopItemsContainer = document.getElementById('shop-items');
+  inventoryContainer = document.getElementById('inventory-container');
+
+  if (!hungerBar || !feedBtn || !gameContainer) {
+    console.error('Critical DOM elements missing!');
+    return;
+  }
+
+  // Initialize Config Values
+  if (config && config.defaults) {
+    state.hunger = config.defaults.hunger;
+    state.thirst = config.defaults.thirst;
+    state.fun = config.defaults.fun;
+  }
+  
+  if (config && config.actions) {
+    feedAmount = config.actions.feedAmount;
+    waterAmount = config.actions.waterAmount;
+  }
+
+  if (config && config.shopItems) {
+    shopItems = config.shopItems.map(item => {
+      return {
+        ...item,
+        effect: () => {
+          if (item.type === 'consumable') {
+            state.fun = Math.min(100, state.fun + item.value);
+            updateUI();
+          } else if (item.type === 'upgrade') {
+            if (item.id === 'premium_food') {
+              feedAmount = item.value;
+              if (feedBtn && !feedBtn.disabled) feedBtn.textContent = `밥주기 (+${feedAmount})`;
+            } else if (item.id === 'premium_water') {
+              waterAmount = item.value;
+              if (waterBtn && !waterBtn.disabled) waterBtn.textContent = `물주기 (+${waterAmount})`;
+            }
+          }
+        }
+      };
+    });
+  }
+
+  // Event Listeners
+  feedBtn.addEventListener('click', feed);
+  waterBtn.addEventListener('click', water);
+  gameContainer.addEventListener('click', handleInteraction);
+  restartBtn.addEventListener('click', startGame);
+
+  shopBtn.addEventListener('click', toggleShop);
+  closeShopBtn.addEventListener('click', toggleShop);
+
+  // Initial Render
+  renderInventory();
+  startGame();
+}
+
 function startGame() {
-  state.hunger = 100;
-  state.thirst = 100;
-  state.fun = 100;
+  if (config && config.defaults) {
+    state.hunger = config.defaults.hunger;
+    state.thirst = config.defaults.thirst;
+    state.fun = config.defaults.fun;
+  } else {
+    state.hunger = 100;
+    state.thirst = 100;
+    state.fun = 100;
+  }
   state.gameOver = false;
   
   updateUI();
@@ -81,6 +157,8 @@ function checkGameOver() {
 }
 
 function updateUI() {
+  if (!hungerBar) return; // Safety check
+
   // Update bars
   hungerBar.style.width = `${state.hunger}%`;
   hungerText.textContent = `${state.hunger}%`;
@@ -108,12 +186,6 @@ function updateBarColor(element, value) {
 }
 
 function updateCatState() {
-  // Logic:
-  // 1. Happy: Hunger & Thirst >= 90
-  // 2. Neutral: Hunger & Thirst >= 60
-  // 3. Sleep: Hunger & Thirst >= 30 (or default if lower, but prompt implies thresholds)
-  // Let's use the highest matching state.
-  
   let newState = 'sleep'; // Default/Low
   
   if (state.hunger >= 90 && state.thirst >= 90) {
@@ -126,9 +198,8 @@ function updateCatState() {
     newState = 'sleep'; // Fallback for very low stats
   }
 
-  // Only update if src changes to avoid flickering (though browser handles cache)
   const newSrc = `/cat_${newState}.png`;
-  if (!catImage.src.endsWith(newSrc)) {
+  if (catImage && !catImage.src.endsWith(newSrc)) {
     catImage.src = newSrc;
   }
 }
@@ -189,20 +260,18 @@ function water() {
 function handleInteraction(e) {
   if (state.gameOver) return;
   
-  // Check if clicked on cat
-  // Note: The event listener is on gameContainer.
-  // If e.target is the cat image, it's a pet.
-  // Otherwise it's a background click.
-  
+  let petAmount = config && config.actions ? config.actions.petAmount : 3;
+  let bgAmount = config && config.actions ? config.actions.backgroundClickAmount : 1;
+
   if (e.target === catImage) {
-    state.fun = Math.min(100, state.fun + 3);
-    showFloatingText(e.clientX, e.clientY, '+3 재미');
+    state.fun = Math.min(100, state.fun + petAmount);
+    showFloatingText(e.clientX, e.clientY, `+${petAmount} 재미`);
   } else {
     // Don't trigger on buttons
     if (e.target.closest('button')) return;
     
-    state.fun = Math.min(100, state.fun + 1);
-    showFloatingText(e.clientX, e.clientY, '+1 재미');
+    state.fun = Math.min(100, state.fun + bgAmount);
+    showFloatingText(e.clientX, e.clientY, `+${bgAmount} 재미`);
   }
   
   updateUI();
@@ -237,26 +306,16 @@ styleSheet.innerText = `
 `;
 document.head.appendChild(styleSheet);
 
-// Event Listeners
-feedBtn.addEventListener('click', feed);
-waterBtn.addEventListener('click', water);
-gameContainer.addEventListener('click', handleInteraction); // Covers both cat and background
-gameContainer.addEventListener('click', handleInteraction); // Covers both cat and background
-restartBtn.addEventListener('click', startGame);
-
-// Shop Listeners
-shopBtn.addEventListener('click', toggleShop);
-closeShopBtn.addEventListener('click', toggleShop);
-
 // Shop Logic
-const shopItems = [
-  { id: 'treat', name: '맛있는 간식', desc: '+10 재미', cost: 10, type: 'consumable', effect: () => { state.fun = Math.min(100, state.fun + 10); updateUI(); } },
-  { id: 'premium_food', name: '고급 사료', desc: '밥주기 회복량 +30', cost: 50, type: 'upgrade', effect: () => { feedAmount = 30; } },
-  { id: 'premium_water', name: '미네랄 워터', desc: '물주기 회복량 +35', cost: 50, type: 'upgrade', effect: () => { waterAmount = 35; } }
-];
+// Map config items to include logic
+// shopItems is now initialized in init()
 
-let feedAmount = 20;
-let waterAmount = 25;
+// Store purchased upgrades
+const upgrades = new Set();
+
+function hasUpgrade(id) {
+  return upgrades.has(id);
+}
 
 function generateCoins() {
   if (state.gameOver) return;
@@ -268,7 +327,7 @@ function generateCoins() {
 }
 
 function updateCoinUI() {
-  coinCount.textContent = state.coins;
+  if (coinCount) coinCount.textContent = state.coins;
 }
 
 function toggleShop() {
@@ -302,13 +361,6 @@ function renderShop() {
   });
 }
 
-// Store purchased upgrades
-const upgrades = new Set();
-
-function hasUpgrade(id) {
-  return upgrades.has(id);
-}
-
 // Expose buyItem to window for onclick
 window.buyItem = function(id) {
   const item = shopItems.find(i => i.id === id);
@@ -333,6 +385,7 @@ window.buyItem = function(id) {
 };
 
 function renderInventory() {
+  if (!inventoryContainer) return;
   inventoryContainer.innerHTML = '';
   
   // Render up to 3 slots
@@ -381,8 +434,10 @@ function useItem(index) {
   renderShop(); // Update shop UI (in case upgrade status changed)
 }
 
-// Initial render
-renderInventory();
+// Start Initialization
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', init);
+} else {
+  init();
+}
 
-// Start
-startGame();
