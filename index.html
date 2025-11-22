@@ -1,58 +1,84 @@
 <!DOCTYPE html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Cat Idle Game</title>
-    <link rel="stylesheet" href="./style.css" />
-  </head>
-  <body>
-    <div id="app">
-      <div id="game-container">
-        <!-- Stats Panel -->
-        <div id="stats-panel">
-          <div class="stat-row">
-            <span class="stat-label">Hunger</span>
-            <div class="progress-bar">
-              <div id="hunger-bar" class="progress-fill" style="width: 100%"></div>
-            </div>
-            <span id="hunger-text" class="stat-value">100%</span>
-          </div>
-          <div class="stat-row">
-            <span class="stat-label">Thirst</span>
-            <div class="progress-bar">
-              <div id="thirst-bar" class="progress-fill" style="width: 100%"></div>
-            </div>
-            <span id="thirst-text" class="stat-value">100%</span>
-          </div>
-          <div class="stat-row">
-            <span class="stat-label">Fun</span>
-            <div class="progress-bar">
-              <div id="fun-bar" class="progress-fill" style="width: 100%"></div>
-            </div>
-            <span id="fun-text" class="stat-value">100%</span>
-          </div>
-        </div>
 
-        <!-- Cat Character -->
-        <div id="cat-container">
-          <img id="cat-image" src="/cat_happy.png" alt="Cat" />
-        </div>
+<head>
+  <meta charset="UTF-8" />
+  <link rel="icon" type="image/svg+xml" href="/vite.svg" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Cat Idle Game</title>
+  <link rel="stylesheet" href="./style.css" />
+</head>
 
-        <!-- Controls -->
-        <div id="controls">
-          <button id="feed-btn" class="action-btn">Feed (+20)</button>
-          <button id="water-btn" class="action-btn">Water (+25)</button>
+<body>
+  <div id="app">
+    <div id="game-container">
+      <!-- Stats Panel -->
+      <div id="stats-panel">
+        <div class="stat-row">
+          <span class="stat-label">배고픔</span>
+          <div class="progress-bar">
+            <div id="hunger-bar" class="progress-fill" style="width: 100%"></div>
+          </div>
+          <span id="hunger-text" class="stat-value">100%</span>
         </div>
-        
-        <!-- Game Over Overlay -->
-        <div id="game-over" class="hidden">
-            <h1>Game Over</h1>
-            <button id="restart-btn">Restart</button>
+        <div class="stat-row">
+          <span class="stat-label">목마름</span>
+          <div class="progress-bar">
+            <div id="thirst-bar" class="progress-fill" style="width: 100%"></div>
+          </div>
+          <span id="thirst-text" class="stat-value">100%</span>
+        </div>
+        <div class="stat-row">
+          <span class="stat-label">재미</span>
+          <div class="progress-bar">
+            <div id="fun-bar" class="progress-fill" style="width: 100%"></div>
+          </div>
+          <span id="fun-text" class="stat-value">100%</span>
         </div>
       </div>
+
+      <!-- Cat Character -->
+      <div id="cat-container">
+        <img id="cat-image" src="/cat_happy.png" alt="Cat" />
+      </div>
+
+      <!-- Controls -->
+      <div id="controls">
+        <button id="feed-btn" class="action-btn">밥주기 (+20)</button>
+        <button id="water-btn" class="action-btn">물주기 (+25)</button>
+        <button id="shop-btn" class="action-btn" style="background-color: #feca57;">상점 🛒</button>
+      </div>
+
+      <!-- Coin Display -->
+      <div id="coin-display">
+        <span class="coin-icon">💰</span>
+        <span id="coin-count">0</span>
+      </div>
+
+      <!-- Inventory -->
+      <div id="inventory-container">
+        <!-- Inventory items will be injected here -->
+      </div>
+
+      <!-- Shop Modal -->
+      <div id="shop-modal" class="hidden">
+        <div class="modal-content">
+          <h2>상점 🛒</h2>
+          <div id="shop-items">
+            <!-- Items will be injected here -->
+          </div>
+          <button id="close-shop-btn" class="action-btn">닫기</button>
+        </div>
+      </div>
+
+      <!-- Game Over Overlay -->
+      <div id="game-over" class="hidden">
+        <h1>게임 오버</h1>
+        <button id="restart-btn">다시 시작</button>
+      </div>
     </div>
-    <script type="module" src="/src/main.js"></script>
-  </body>
+  </div>
+  <script type="module" src="/src/main.js"></script>
+</body>
+
 </html>

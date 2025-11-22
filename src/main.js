@@ -3,6 +3,8 @@ const state = {
   hunger: 100,
   thirst: 100,
   fun: 100,
+  coins: 0,
+  inventory: [],
   gameOver: false,
 };
 
@@ -20,6 +22,14 @@ const waterBtn = document.getElementById('water-btn');
 const gameContainer = document.getElementById('game-container');
 const gameOverScreen = document.getElementById('game-over');
 const restartBtn = document.getElementById('restart-btn');
+
+// Shop Elements
+const coinCount = document.getElementById('coin-count');
+const shopBtn = document.getElementById('shop-btn');
+const shopModal = document.getElementById('shop-modal');
+const closeShopBtn = document.getElementById('close-shop-btn');
+const shopItemsContainer = document.getElementById('shop-items');
+const inventoryContainer = document.getElementById('inventory-container');
 
 // Cooldowns
 let feedCooldown = false;
@@ -43,6 +53,10 @@ function startGame() {
   
   if (gameInterval) clearInterval(gameInterval);
   gameInterval = setInterval(gameLoop, DECAY_INTERVAL);
+  
+  // Passive Coin Generation
+  if (window.coinInterval) clearInterval(window.coinInterval);
+  window.coinInterval = setInterval(generateCoins, 1000);
 }
 
 function gameLoop() {
@@ -123,7 +137,7 @@ function updateCatState() {
 function feed() {
   if (feedCooldown || state.gameOver) return;
   
-  state.hunger = Math.min(100, state.hunger + 20);
+  state.hunger = Math.min(100, state.hunger + feedAmount);
   updateUI();
   updateCatState();
   
@@ -139,9 +153,9 @@ function feed() {
       clearInterval(interval);
       feedCooldown = false;
       feedBtn.disabled = false;
-      feedBtn.textContent = 'Feed (+20)';
+      feedBtn.textContent = `밥주기 (+${feedAmount})`;
     } else {
-      feedBtn.textContent = `Feed (${timeLeft})`;
+      feedBtn.textContent = `밥주기 (${timeLeft})`;
     }
   }, 1000);
 }
@@ -149,7 +163,7 @@ function feed() {
 function water() {
   if (waterCooldown || state.gameOver) return;
   
-  state.thirst = Math.min(100, state.thirst + 25);
+  state.thirst = Math.min(100, state.thirst + waterAmount);
   updateUI();
   updateCatState();
   
@@ -165,9 +179,9 @@ function water() {
       clearInterval(interval);
       waterCooldown = false;
       waterBtn.disabled = false;
-      waterBtn.textContent = 'Water (+25)';
+      waterBtn.textContent = `물주기 (+${waterAmount})`;
     } else {
-      waterBtn.textContent = `Water (${timeLeft})`;
+      waterBtn.textContent = `물주기 (${timeLeft})`;
     }
   }, 1000);
 }
@@ -182,13 +196,13 @@ function handleInteraction(e) {
   
   if (e.target === catImage) {
     state.fun = Math.min(100, state.fun + 3);
-    showFloatingText(e.clientX, e.clientY, '+3 Fun');
+    showFloatingText(e.clientX, e.clientY, '+3 재미');
   } else {
     // Don't trigger on buttons
     if (e.target.closest('button')) return;
     
     state.fun = Math.min(100, state.fun + 1);
-    showFloatingText(e.clientX, e.clientY, '+1 Fun');
+    showFloatingText(e.clientX, e.clientY, '+1 재미');
   }
   
   updateUI();
@@ -227,7 +241,148 @@ document.head.appendChild(styleSheet);
 feedBtn.addEventListener('click', feed);
 waterBtn.addEventListener('click', water);
 gameContainer.addEventListener('click', handleInteraction); // Covers both cat and background
+gameContainer.addEventListener('click', handleInteraction); // Covers both cat and background
 restartBtn.addEventListener('click', startGame);
+
+// Shop Listeners
+shopBtn.addEventListener('click', toggleShop);
+closeShopBtn.addEventListener('click', toggleShop);
+
+// Shop Logic
+const shopItems = [
+  { id: 'treat', name: '맛있는 간식', desc: '+10 재미', cost: 10, type: 'consumable', effect: () => { state.fun = Math.min(100, state.fun + 10); updateUI(); } },
+  { id: 'premium_food', name: '고급 사료', desc: '밥주기 회복량 +30', cost: 50, type: 'upgrade', effect: () => { feedAmount = 30; } },
+  { id: 'premium_water', name: '미네랄 워터', desc: '물주기 회복량 +35', cost: 50, type: 'upgrade', effect: () => { waterAmount = 35; } }
+];
+
+let feedAmount = 20;
+let waterAmount = 25;
+
+function generateCoins() {
+  if (state.gameOver) return;
+  // Generate 1 coin if all stats are above 50
+  if (state.hunger > 50 && state.thirst > 50 && state.fun > 50) {
+    state.coins++;
+    updateCoinUI();
+  }
+}
+
+function updateCoinUI() {
+  coinCount.textContent = state.coins;
+}
+
+function toggleShop() {
+  const isHidden = shopModal.classList.contains('hidden');
+  if (isHidden) {
+    renderShop();
+    shopModal.classList.remove('hidden');
+  } else {
+    shopModal.classList.add('hidden');
+  }
+}
+
+function renderShop() {
+  shopItemsContainer.innerHTML = '';
+  shopItems.forEach(item => {
+    const itemEl = document.createElement('div');
+    itemEl.className = 'shop-item';
+    
+    const isPurchased = (item.type === 'upgrade' && hasUpgrade(item.id));
+    
+    itemEl.innerHTML = `
+      <div class="item-info">
+        <span class="item-name">${item.name}</span>
+        <span class="item-desc">${item.desc}</span>
+      </div>
+      <button class="buy-btn" onclick="buyItem('${item.id}')" ${state.coins < item.cost || isPurchased ? 'disabled' : ''}>
+        ${isPurchased ? '보유중' : item.cost + ' 💰'}
+      </button>
+    `;
+    shopItemsContainer.appendChild(itemEl);
+  });
+}
+
+// Store purchased upgrades
+const upgrades = new Set();
+
+function hasUpgrade(id) {
+  return upgrades.has(id);
+}
+
+// Expose buyItem to window for onclick
+window.buyItem = function(id) {
+  const item = shopItems.find(i => i.id === id);
+  if (!item) return;
+  
+  // Check inventory space
+  if (state.inventory.length >= 3) {
+    showFloatingText(window.innerWidth / 2, window.innerHeight / 2, '인벤토리 가득참!');
+    return;
+  }
+
+  if (state.coins >= item.cost) {
+    state.coins -= item.cost;
+    updateCoinUI();
+    
+    // Add to inventory instead of immediate effect
+    state.inventory.push(item);
+    renderInventory();
+    
+    showFloatingText(window.innerWidth / 2, window.innerHeight / 2, `${item.name} 구매!`);
+  }
+};
+
+function renderInventory() {
+  inventoryContainer.innerHTML = '';
+  
+  // Render up to 3 slots
+  for (let i = 0; i < 3; i++) {
+    const slot = document.createElement('div');
+    slot.className = 'inventory-slot';
+    
+    if (state.inventory[i]) {
+      const item = state.inventory[i];
+      // Simple icon mapping based on id or type
+      let icon = '❓';
+      if (item.id === 'treat') icon = '🍬';
+      else if (item.id === 'premium_food') icon = '🍖';
+      else if (item.id === 'premium_water') icon = '💧';
+      
+      slot.textContent = icon;
+      slot.title = item.name;
+      slot.onclick = () => useItem(i);
+    } else {
+      slot.className += ' empty';
+    }
+    
+    inventoryContainer.appendChild(slot);
+  }
+}
+
+function useItem(index) {
+  if (state.gameOver) return;
+  
+  const item = state.inventory[index];
+  if (!item) return;
+  
+  // Apply effect
+  if (item.type === 'upgrade') {
+    upgrades.add(item.id);
+    item.effect(); // Sets the feed/water amount
+    showFloatingText(window.innerWidth / 2, window.innerHeight / 2, `업그레이드 완료!`);
+  } else {
+    item.effect(); // Consumable effect
+    showFloatingText(window.innerWidth / 2, window.innerHeight / 2, `${item.name} 사용!`);
+  }
+  
+  // Remove from inventory
+  state.inventory.splice(index, 1);
+  renderInventory();
+  renderShop(); // Update shop UI (in case upgrade status changed)
+}
+
+// Initial render
+renderInventory();
 
 // Start
 startGame();
