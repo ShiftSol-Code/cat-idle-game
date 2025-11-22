@@ -1,73 +1,86 @@
-# 🐱 Cat Idle Game
+# 🐱 고양이 키우기 게임 (Cat Idle Game)
 
-A web-based idle game featuring an adorable cat with interactive stats and engaging gameplay.
+귀여운 고양이를 돌보는 웹 기반 방치형 게임입니다. 밥을 주고, 물을 주고, 놀아주면서 고양이를 행복하게 만들어주세요!
 
-## 🎮 Features
+## 🎮 게임 소개
 
-- **Dynamic Cat States**: The cat's appearance changes based on hunger and thirst levels
-- **Three Interactive Stats**:
-  - 🍖 Hunger (decreases over time)
-  - 💧 Thirst (decreases over time)
-  - 🎾 Fun (decreases over time)
-- **Interactive Buttons**:
-  - Feed button with cooldown timer
-  - Water button with cooldown timer
-  - Touch/play interaction for fun
-- **Visual Feedback**: Real-time stat gauges and percentage displays
-- **Beautiful UI**: Modern design with smooth animations
+이 게임은 고양이의 상태를 관리하는 간단하고 재미있는 게임입니다.
 
-## 🚀 Getting Started
+- **고양이의 상태 변화**: 배고픔과 목마름 상태에 따라 고양이의 모습이 변합니다.
+- **3가지 주요 상태**:
+  - 🍖 **배고픔 (Hunger)**: 시간이 지날수록 배고파합니다.
+  - 💧 **목마름 (Thirst)**: 시간이 지날수록 목말라합니다.
+  - 🎾 **재미 (Fun)**: 심심해하면 놀아줘야 합니다.
+- **상호작용**:
+  - **밥주기 버튼**: 배고픔을 채워줍니다. (쿨타임 있음)
+  - **물주기 버튼**: 목마름을 해결해줍니다. (쿨타임 있음)
+  - **쓰다듬기**: 고양이를 클릭/터치하여 재미 수치를 올려줍니다.
 
-### Prerequisites
+## 🚀 시작하기 (초보자 가이드)
 
-- Node.js (v14 or higher)
-- npm
+프로그래밍을 잘 몰라도 아래 순서대로 따라하면 게임을 실행해볼 수 있습니다.
 
-### Installation
+### 1. 필수 프로그램 설치
 
+게임을 실행하려면 먼저 아래 프로그램들이 컴퓨터에 설치되어 있어야 합니다.
+
+1.  **Node.js 설치**:
+    -   [Node.js 공식 홈페이지](https://nodejs.org/)에 접속합니다.
+    -   **LTS** (Long Term Support) 버전을 다운로드하여 설치합니다.
+2.  **VS Code 설치 (선택 사항)**:
+    -   코드를 수정하고 싶다면 [Visual Studio Code](https://code.visualstudio.com/)를 설치하면 편리합니다.
+3.  **Git 설치**:
+    -   [Git 공식 홈페이지](https://git-scm.com/)에서 다운로드하여 설치합니다.
+
+### 2. 게임 다운로드 및 실행
+
+명령 프롬프트(CMD)나 터미널, 또는 VS Code의 터미널을 열고 아래 명령어들을 한 줄씩 입력하세요.
+
+**1. 프로젝트 다운로드 (복제)**
 ```bash
-# Clone the repository
 git clone https://github.com/ShiftSol-Code/cat-idle-game.git
+```
 
-# Navigate to project directory
+**2. 프로젝트 폴더로 이동**
+```bash
 cd cat-idle-game
+```
 
-# Install dependencies
+**3. 필요한 도구 설치**
+(이 과정은 처음에 한 번만 하면 됩니다)
+```bash
 npm install
+```
 
-# Run development server
+**4. 게임 실행**
+```bash
 npm run dev
 ```
 
-### Building for Production
+### 3. 게임 접속
 
-```bash
-npm run build
-```
+위 명령어를 실행하면 터미널에 다음과 같은 주소가 나타납니다:
+`http://localhost:5173/` (숫자는 다를 수 있습니다)
 
-## 🎯 How to Play
+인터넷 브라우저(크롬, 엣지 등)를 켜고 주소창에 저 주소를 입력하면 게임이 시작됩니다!
 
-1. Watch your cat's stats (Hunger, Thirst, Fun) decrease over time
-2. Click the **Feed** button to restore hunger
-3. Click the **Water** button to restore thirst
-4. Touch/click the cat to increase fun
-5. Keep your cat happy by maintaining all stats!
+## 🎯 플레이 방법
 
-## 🛠️ Technologies Used
+1.  화면 상단에 있는 **배고픔, 목마름, 재미** 게이지를 확인하세요. 시간이 지나면 점점 줄어듭니다.
+2.  **밥주기** 버튼을 눌러 배고픔을 채워주세요.
+3.  **물주기** 버튼을 눌러 목마름을 채워주세요.
+4.  고양이를 **클릭**하거나 **터치**해서 놀아주세요 (재미 수치 증가).
+5.  모든 수치를 높게 유지해서 고양이를 행복하게 만들어주세요!
 
-- Vite
-- JavaScript
-- CSS3
-- HTML5
+## 🛠️ 사용된 기술
 
-## 📝 License
+-   **Vite**: 빠르고 가벼운 개발 도구
+-   **JavaScript**: 게임의 동작을 담당
+-   **HTML/CSS**: 화면 구성 및 디자인
 
-This project is open source and available under the MIT License.
+## 📝 라이선스
 
-## 🤝 Contributing
-
-Contributions, issues, and feature requests are welcome!
+이 프로젝트는 MIT 라이선스를 따릅니다. 누구나 자유롭게 수정하고 배포할 수 있습니다.
 
 ---
-
-Made with ❤️ for cat lovers
+고양이를 사랑하는 마음으로 만들었습니다 ❤️
