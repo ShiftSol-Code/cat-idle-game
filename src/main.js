@@ -25,11 +25,15 @@ let waterCooldown = false;
 // Constants (Defaults if config fails)
 let DECAY_RATE = 1;
 let DECAY_INTERVAL = 1000;
-let COIN_INTERVAL = 1000;
 let INVENTORY_SIZE = 3;
 
 // Game Loop
 let gameInterval;
+let coinInterval;
+
+// Coin Logic State
+let coinTick = 0;
+let bonusGiven = false;
 
 // Config Values
 let feedAmount = 20;
@@ -82,7 +86,6 @@ function init() {
     if (config.settings) {
         DECAY_RATE = config.settings.decayRate || 1;
         DECAY_INTERVAL = config.settings.decayInterval || 1000;
-        COIN_INTERVAL = config.settings.coinInterval || 1000;
         INVENTORY_SIZE = config.settings.inventorySize || 3;
     }
 
@@ -134,16 +137,20 @@ function startGame() {
     state.fun = 100;
   }
   state.gameOver = false;
+  state.coins = 0; // Reset coins on restart
+  coinTick = 0;
+  bonusGiven = false;
   
   updateUI();
+  updateCoinUI();
   gameOverScreen.classList.add('hidden');
   
   if (gameInterval) clearInterval(gameInterval);
   gameInterval = setInterval(gameLoop, DECAY_INTERVAL);
   
-  // Passive Coin Generation
-  if (window.coinInterval) clearInterval(window.coinInterval);
-  window.coinInterval = setInterval(generateCoins, COIN_INTERVAL);
+  // Coin Generation Loop (Fixed 1s tick)
+  if (coinInterval) clearInterval(coinInterval);
+  coinInterval = setInterval(generateCoins, 1000);
 }
 
 function gameLoop() {
@@ -163,6 +170,7 @@ function checkGameOver() {
   if (state.hunger === 0 && state.thirst === 0 && state.fun === 0) {
     state.gameOver = true;
     clearInterval(gameInterval);
+    clearInterval(coinInterval);
     
     const finalScoreEl = document.getElementById('final-score');
     if (finalScoreEl) {
@@ -343,12 +351,44 @@ function hasUpgrade(id) {
 
 function generateCoins() {
   if (state.gameOver) return;
-  // Generate 1 coin if all stats are above threshold
-  const threshold = (config && config.thresholds && config.thresholds.coinGeneration) || 50;
-  if (state.hunger > threshold && state.thirst > threshold && state.fun > threshold) {
-    state.coins++;
-    updateCoinUI();
+
+  const minStat = Math.min(state.hunger, state.thirst, state.fun);
+  
+  // Bonus Logic: All 100%
+  if (state.hunger === 100 && state.thirst === 100 && state.fun === 100) {
+    if (!bonusGiven) {
+      const bonus = (config && config.bonus && config.bonus.allMax) || 10;
+      state.coins += bonus;
+      showFloatingText(window.innerWidth / 2, window.innerHeight / 2, `보너스 +${bonus} 코인!`);
+      bonusGiven = true;
+    }
+  } else {
+    bonusGiven = false;
   }
+
+  // Tiered Generation Logic
+  coinTick++;
+  
+  const max = (config && config.thresholds && config.thresholds.coinGenMax) || 90;
+  const high = (config && config.thresholds && config.thresholds.coinGenHigh) || 60;
+  const mid = (config && config.thresholds && config.thresholds.coinGenMid) || 30;
+  const low = (config && config.thresholds && config.thresholds.coinGenLow) || 10;
+
+  if (minStat >= max) {
+    // > 90%: 2 coins every 1s
+    state.coins += 2;
+  } else if (minStat >= high) {
+    // > 60%: 1 coin every 1s
+    state.coins++;
+  } else if (minStat >= mid) {
+    // > 30%: 1 coin every 2s
+    if (coinTick % 2 === 0) state.coins++;
+  } else if (minStat >= low) {
+    // > 10%: 1 coin every 3s
+    if (coinTick % 3 === 0) state.coins++;
+  }
+  
+  updateCoinUI();
 }
 
 function updateCoinUI() {

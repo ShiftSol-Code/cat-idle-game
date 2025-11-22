@@ -13,25 +13,32 @@
     "settings": {
         "decayRate": 1,
         "decayInterval": 1000,
-        "coinInterval": 500,
+        "coinInterval": 1000,
         "inventorySize": 3
     },
     "cooldowns": {
         "feed": 10,
-        "water": 5
+        "water": 10
     },
     "thresholds": {
-        "coinGeneration": 50,
+        "coinGeneration": 40,
+        "coinGenLow": 10,
+        "coinGenMid": 30,
+        "coinGenHigh": 60,
+        "coinGenMax": 90,
         "barDanger": 30,
         "barWarning": 60,
         "catHappy": 90,
         "catNeutral": 60,
         "catSleep": 30
     },
+    "bonus": {
+        "allMax": 10
+    },
     "shopItems": [
         {
             "id": "treat",
-            "name": "맛있는 간식",
+            "name": "반짝이는 나비 장난감",
             "desc": "+20 재미",
             "cost": 10,
             "type": "consumable",
