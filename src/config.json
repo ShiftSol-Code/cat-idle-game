@@ -1,20 +1,38 @@
 {
     "defaults": {
-        "hunger": 100,
-        "thirst": 100,
-        "fun": 100
+        "hunger": 10,
+        "thirst": 10,
+        "fun": 10
     },
     "actions": {
-        "feedAmount": 15,
-        "waterAmount": 15,
+        "feedAmount": 20,
+        "waterAmount": 20,
         "petAmount": 3,
         "backgroundClickAmount": 1
+    },
+    "settings": {
+        "decayRate": 1,
+        "decayInterval": 1000,
+        "coinInterval": 500,
+        "inventorySize": 3
+    },
+    "cooldowns": {
+        "feed": 10,
+        "water": 5
+    },
+    "thresholds": {
+        "coinGeneration": 50,
+        "barDanger": 30,
+        "barWarning": 60,
+        "catHappy": 90,
+        "catNeutral": 60,
+        "catSleep": 30
     },
     "shopItems": [
         {
             "id": "treat",
             "name": "맛있는 간식",
-            "desc": "+10 재미",
+            "desc": "+20 재미",
             "cost": 10,
             "type": "consumable",
             "value": 20
@@ -23,7 +41,7 @@
             "id": "premium_food",
             "name": "고급 사료",
             "desc": "밥주기 회복량 +30",
-            "cost": 50,
+            "cost": 30,
             "type": "upgrade",
             "value": 30
         },
@@ -31,7 +49,7 @@
             "id": "premium_water",
             "name": "미네랄 워터",
             "desc": "물주기 회복량 +35",
-            "cost": 50,
+            "cost": 30,
             "type": "upgrade",
             "value": 35
         }

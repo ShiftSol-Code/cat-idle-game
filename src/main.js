@@ -22,9 +22,11 @@ let coinCount, shopBtn, shopModal, closeShopBtn, shopItemsContainer, inventoryCo
 let feedCooldown = false;
 let waterCooldown = false;
 
-// Constants
-const DECAY_RATE = 1; // per second
-const DECAY_INTERVAL = 1000; // ms
+// Constants (Defaults if config fails)
+let DECAY_RATE = 1;
+let DECAY_INTERVAL = 1000;
+let COIN_INTERVAL = 1000;
+let INVENTORY_SIZE = 3;
 
 // Game Loop
 let gameInterval;
@@ -65,37 +67,46 @@ function init() {
   }
 
   // Initialize Config Values
-  if (config && config.defaults) {
-    state.hunger = config.defaults.hunger;
-    state.thirst = config.defaults.thirst;
-    state.fun = config.defaults.fun;
-  }
-  
-  if (config && config.actions) {
-    feedAmount = config.actions.feedAmount;
-    waterAmount = config.actions.waterAmount;
-  }
+  if (config) {
+    if (config.defaults) {
+        state.hunger = config.defaults.hunger;
+        state.thirst = config.defaults.thirst;
+        state.fun = config.defaults.fun;
+    }
+    
+    if (config.actions) {
+        feedAmount = config.actions.feedAmount;
+        waterAmount = config.actions.waterAmount;
+    }
 
-  if (config && config.shopItems) {
-    shopItems = config.shopItems.map(item => {
-      return {
-        ...item,
-        effect: () => {
-          if (item.type === 'consumable') {
-            state.fun = Math.min(100, state.fun + item.value);
-            updateUI();
-          } else if (item.type === 'upgrade') {
-            if (item.id === 'premium_food') {
-              feedAmount = item.value;
-              if (feedBtn && !feedBtn.disabled) feedBtn.textContent = `밥주기 (+${feedAmount})`;
-            } else if (item.id === 'premium_water') {
-              waterAmount = item.value;
-              if (waterBtn && !waterBtn.disabled) waterBtn.textContent = `물주기 (+${waterAmount})`;
+    if (config.settings) {
+        DECAY_RATE = config.settings.decayRate || 1;
+        DECAY_INTERVAL = config.settings.decayInterval || 1000;
+        COIN_INTERVAL = config.settings.coinInterval || 1000;
+        INVENTORY_SIZE = config.settings.inventorySize || 3;
+    }
+
+    if (config.shopItems) {
+        shopItems = config.shopItems.map(item => {
+        return {
+            ...item,
+            effect: () => {
+            if (item.type === 'consumable') {
+                state.fun = Math.min(100, state.fun + item.value);
+                updateUI();
+            } else if (item.type === 'upgrade') {
+                if (item.id === 'premium_food') {
+                feedAmount = item.value;
+                if (feedBtn && !feedBtn.disabled) feedBtn.textContent = `밥주기 (+${feedAmount})`;
+                } else if (item.id === 'premium_water') {
+                waterAmount = item.value;
+                if (waterBtn && !waterBtn.disabled) waterBtn.textContent = `물주기 (+${waterAmount})`;
+                }
             }
-          }
-        }
-      };
-    });
+            }
+        };
+        });
+    }
   }
 
   // Event Listeners
@@ -132,7 +143,7 @@ function startGame() {
   
   // Passive Coin Generation
   if (window.coinInterval) clearInterval(window.coinInterval);
-  window.coinInterval = setInterval(generateCoins, 1000);
+  window.coinInterval = setInterval(generateCoins, COIN_INTERVAL);
 }
 
 function gameLoop() {
@@ -152,6 +163,12 @@ function checkGameOver() {
   if (state.hunger === 0 && state.thirst === 0 && state.fun === 0) {
     state.gameOver = true;
     clearInterval(gameInterval);
+    
+    const finalScoreEl = document.getElementById('final-score');
+    if (finalScoreEl) {
+      finalScoreEl.textContent = `그동안 적립된 코인은 ${state.coins}개 입니다`;
+    }
+    
     gameOverScreen.classList.remove('hidden');
   }
 }
@@ -176,9 +193,12 @@ function updateUI() {
 }
 
 function updateBarColor(element, value) {
-  if (value < 30) {
+  const danger = (config && config.thresholds && config.thresholds.barDanger) || 30;
+  const warning = (config && config.thresholds && config.thresholds.barWarning) || 60;
+
+  if (value < danger) {
     element.style.backgroundColor = '#ff6b6b'; // Danger
-  } else if (value < 60) {
+  } else if (value < warning) {
     element.style.backgroundColor = '#feca57'; // Warning
   } else {
     element.style.backgroundColor = '#76c7c0'; // Normal
@@ -188,11 +208,15 @@ function updateBarColor(element, value) {
 function updateCatState() {
   let newState = 'sleep'; // Default/Low
   
-  if (state.hunger >= 90 && state.thirst >= 90) {
+  const happy = (config && config.thresholds && config.thresholds.catHappy) || 90;
+  const neutral = (config && config.thresholds && config.thresholds.catNeutral) || 60;
+  const sleep = (config && config.thresholds && config.thresholds.catSleep) || 30;
+  
+  if (state.hunger >= happy && state.thirst >= happy) {
     newState = 'happy';
-  } else if (state.hunger >= 60 && state.thirst >= 60) {
+  } else if (state.hunger >= neutral && state.thirst >= neutral) {
     newState = 'neutral';
-  } else if (state.hunger >= 30 && state.thirst >= 30) {
+  } else if (state.hunger >= sleep && state.thirst >= sleep) {
     newState = 'sleep';
   } else {
     newState = 'sleep'; // Fallback for very low stats
@@ -215,7 +239,7 @@ function feed() {
   // Cooldown
   feedCooldown = true;
   feedBtn.disabled = true;
-  let timeLeft = 10;
+  let timeLeft = (config && config.cooldowns && config.cooldowns.feed) || 10;
   feedBtn.textContent = `Feed (${timeLeft})`;
   
   const interval = setInterval(() => {
@@ -241,7 +265,7 @@ function water() {
   // Cooldown
   waterCooldown = true;
   waterBtn.disabled = true;
-  let timeLeft = 5;
+  let timeLeft = (config && config.cooldowns && config.cooldowns.water) || 5;
   waterBtn.textContent = `Water (${timeLeft})`;
   
   const interval = setInterval(() => {
@@ -319,8 +343,9 @@ function hasUpgrade(id) {
 
 function generateCoins() {
   if (state.gameOver) return;
-  // Generate 1 coin if all stats are above 50
-  if (state.hunger > 50 && state.thirst > 50 && state.fun > 50) {
+  // Generate 1 coin if all stats are above threshold
+  const threshold = (config && config.thresholds && config.thresholds.coinGeneration) || 50;
+  if (state.hunger > threshold && state.thirst > threshold && state.fun > threshold) {
     state.coins++;
     updateCoinUI();
   }
@@ -367,7 +392,7 @@ window.buyItem = function(id) {
   if (!item) return;
   
   // Check inventory space
-  if (state.inventory.length >= 3) {
+  if (state.inventory.length >= INVENTORY_SIZE) {
     showFloatingText(window.innerWidth / 2, window.innerHeight / 2, '인벤토리 가득참!');
     return;
   }
@@ -388,8 +413,8 @@ function renderInventory() {
   if (!inventoryContainer) return;
   inventoryContainer.innerHTML = '';
   
-  // Render up to 3 slots
-  for (let i = 0; i < 3; i++) {
+  // Render up to INVENTORY_SIZE slots
+  for (let i = 0; i < INVENTORY_SIZE; i++) {
     const slot = document.createElement('div');
     slot.className = 'inventory-slot';
     
