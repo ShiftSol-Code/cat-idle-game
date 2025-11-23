@@ -2,7 +2,8 @@
     "defaults": {
         "hunger": 10,
         "thirst": 10,
-        "fun": 10
+        "fun": 10,
+        "coins": 100
     },
     "actions": {
         "feedAmount": 20,
@@ -64,25 +65,28 @@
             "id": "cat_tower",
             "name": "캣타워",
             "desc": "2초마다 재미 +1",
-            "cost": 20,
+            "cost": 100,
             "type": "furniture",
-            "value": 1
+            "value": 1,
+            "image": "/Icon_cattower.png"
         },
         {
             "id": "auto_feeder",
-            "name": "자동 급식기",
-            "desc": "1초마다 배고픔 +1",
-            "cost": 20,
+            "name": "반자동 급식기",
+            "desc": "2초마다 배고픔 +1",
+            "cost": 150,
             "type": "furniture",
-            "value": 1
+            "value": 1,
+            "image": "/Icon_Autofeeder.png"
         },
         {
             "id": "auto_water",
             "name": "자동 급수기",
             "desc": "1초마다 목마름 +1",
-            "cost": 20,
+            "cost": 200,
             "type": "furniture",
-            "value": 1
+            "value": 1,
+            "image": "/Icon_autowaterdispenser.png"
         }
     ]
 }

@@ -52,7 +52,9 @@ class SoundPool {
 
 const popSound = new SoundPool('/Pop1.mp3', 5);
 const coinSound = new SoundPool('/CashRegister.mp3', 5);
-const bgm = new Audio('/Music/MyMusic1.mp3');
+const bgmTracks = ['/Music/MyMusic1.mp3', '/Music/MyMusic2.mp3', '/Music/babyfox1.mp3', '/Music/babyfox2.mp3'];
+const randomTrack = bgmTracks[Math.floor(Math.random() * bgmTracks.length)];
+const bgm = new Audio(randomTrack);
 bgm.loop = true;
 bgm.volume = 0.5;
 
@@ -231,12 +233,14 @@ function startGame(isLoaded = false) {
         state.hunger = config.defaults.hunger;
         state.thirst = config.defaults.thirst;
         state.fun = config.defaults.fun;
+        state.coins = config.defaults.coins !== undefined ? config.defaults.coins : 0;
     } else {
         state.hunger = 100;
         state.thirst = 100;
         state.fun = 100;
+        state.coins = 0;
     }
-    state.coins = 0; // Reset coins on restart
+    // state.coins = 0; // Removed hardcoded reset, handled above
     state.inventory = [];
     state.placedItems = [];
     upgrades.clear();
@@ -286,9 +290,11 @@ function gameLoop() {
       }
   }
 
-  // Auto Feeder: +1 Hunger every 1 second
+  // Auto Feeder: +1 Hunger every 2 seconds
   if (state.placedItems.includes('auto_feeder')) {
-      state.hunger = Math.min(100, state.hunger + 1);
+      if (coinTick % 2 === 0) {
+          state.hunger = Math.min(100, state.hunger + 1);
+      }
   }
 
   // Auto Water: +1 Thirst every 1 second
@@ -576,9 +582,12 @@ function renderShop() {
     const isPlaced = (item.type === 'furniture' && state.placedItems.includes(item.id));
     
     itemEl.innerHTML = `
-      <div class="item-info">
-        <span class="item-name">${item.name}</span>
-        <span class="item-desc">${item.desc}</span>
+      <div class="shop-item-content">
+        ${item.image ? `<img src="${item.image}" class="shop-item-image" alt="${item.name}">` : ''}
+        <div class="item-info">
+          <span class="item-name">${item.name}</span>
+          <span class="item-desc">${item.desc}</span>
+        </div>
       </div>
       <button class="buy-btn" onclick="buyItem('${item.id}')" ${state.coins < item.cost || isPurchased || isPlaced ? 'disabled' : ''}>
         ${isPurchased || isPlaced ? '보유중' : item.cost + ' 💰'}
@@ -623,13 +632,20 @@ function renderInventory() {
     
     if (state.inventory[i]) {
       const item = state.inventory[i];
-      // Simple icon mapping based on id or type
-      let icon = '❓';
-      if (item.id === 'treat') icon = '🍬';
-      else if (item.id === 'premium_food') icon = '🍖';
-      else if (item.id === 'premium_water') icon = '💧';
+      if (item.image) {
+        const img = document.createElement('img');
+        img.src = item.image;
+        img.className = 'inventory-item-image';
+        slot.appendChild(img);
+      } else {
+        // Simple icon mapping based on id or type
+        let icon = '❓';
+        if (item.id === 'treat') icon = '🍬';
+        else if (item.id === 'premium_food') icon = '🍖';
+        else if (item.id === 'premium_water') icon = '💧';
+        slot.textContent = icon;
+      }
       
-      slot.textContent = icon;
       slot.title = item.name;
       slot.onclick = () => useItem(i);
     } else {
