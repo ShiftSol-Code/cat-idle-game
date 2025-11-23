@@ -59,6 +59,30 @@
             "cost": 30,
             "type": "upgrade",
             "value": 35
+        },
+        {
+            "id": "cat_tower",
+            "name": "캣타워",
+            "desc": "매초 재미 +1",
+            "cost": 100,
+            "type": "furniture",
+            "value": 1
+        },
+        {
+            "id": "auto_feeder",
+            "name": "자동 급식기",
+            "desc": "자동 급식기 (장식)",
+            "cost": 150,
+            "type": "furniture",
+            "value": 0
+        },
+        {
+            "id": "auto_water",
+            "name": "자동 급수기",
+            "desc": "자동 급수기 (장식)",
+            "cost": 150,
+            "type": "furniture",
+            "value": 0
         }
     ]
 }

@@ -11,6 +11,7 @@ const state = {
   coins: 0,
   inventory: [],
   gameOver: false,
+  placedItems: [], // Track placed furniture
 };
 
 // DOM Elements (initialized in init)
@@ -161,6 +162,14 @@ function init() {
                 waterAmount = item.value;
                 if (waterBtn && !waterBtn.disabled) waterBtn.textContent = `물주기 (+${waterAmount})`;
                 }
+            } else if (item.type === 'furniture') {
+                if (!state.placedItems.includes(item.id)) {
+                    state.placedItems.push(item.id);
+                    renderFurniture();
+                    showFloatingText(window.innerWidth / 2, window.innerHeight / 2, `${item.name} 배치 완료!`);
+                } else {
+                    showFloatingText(window.innerWidth / 2, window.innerHeight / 2, `이미 배치되어 있습니다!`);
+                }
             }
             }
         };
@@ -203,9 +212,11 @@ function init() {
         waterBtn.textContent = `물주기 (+${waterAmount})`;
     }
     
+    renderFurniture(); // Render loaded furniture
     startGame(true); // true = isLoaded
   } else {
     renderInventory();
+    renderFurniture(); // Ensure empty furniture is rendered (cleared)
     startGame(false);
   }
 
@@ -227,7 +238,9 @@ function startGame(isLoaded = false) {
     }
     state.coins = 0; // Reset coins on restart
     state.inventory = [];
+    state.placedItems = [];
     upgrades.clear();
+    renderFurniture(); // Clear furniture visuals
     // Reset upgrade values
     if (config && config.actions) {
         feedAmount = config.actions.feedAmount;
@@ -263,6 +276,13 @@ function gameLoop() {
   state.hunger = Math.max(0, state.hunger - DECAY_RATE);
   state.thirst = Math.max(0, state.thirst - DECAY_RATE);
   state.fun = Math.max(0, state.fun - DECAY_RATE);
+
+  // Furniture Effects
+  if (state.placedItems.includes('cat_tower')) {
+      // Cat Tower: +1 Fun every second (approx, since gameLoop is DECAY_INTERVAL)
+      // If DECAY_INTERVAL is 1000ms, this works.
+      state.fun = Math.min(100, state.fun + 1);
+  }
 
   checkGameOver();
   updateCatState();
@@ -541,14 +561,15 @@ function renderShop() {
     itemEl.className = 'shop-item';
     
     const isPurchased = (item.type === 'upgrade' && hasUpgrade(item.id));
+    const isPlaced = (item.type === 'furniture' && state.placedItems.includes(item.id));
     
     itemEl.innerHTML = `
       <div class="item-info">
         <span class="item-name">${item.name}</span>
         <span class="item-desc">${item.desc}</span>
       </div>
-      <button class="buy-btn" onclick="buyItem('${item.id}')" ${state.coins < item.cost || isPurchased ? 'disabled' : ''}>
-        ${isPurchased ? '보유중' : item.cost + ' 💰'}
+      <button class="buy-btn" onclick="buyItem('${item.id}')" ${state.coins < item.cost || isPurchased || isPlaced ? 'disabled' : ''}>
+        ${isPurchased || isPlaced ? '보유중' : item.cost + ' 💰'}
       </button>
     `;
     shopItemsContainer.appendChild(itemEl);
@@ -628,6 +649,33 @@ function useItem(index) {
   renderInventory();
   renderShop(); // Update shop UI (in case upgrade status changed)
   saveGame();
+}
+
+function renderFurniture() {
+    // Remove existing furniture elements
+    const existing = document.querySelectorAll('.furniture-item');
+    existing.forEach(el => el.remove());
+
+    state.placedItems.forEach(id => {
+        const el = document.createElement('img');
+        el.src = `/o_${id.replace('cat_tower', 'cattower').replace('auto_feeder', 'Autofeeder').replace('auto_water', 'autowaterdispenser')}.png`; // Mapping to actual filenames
+        // Filename mapping based on user request:
+        // cat_tower -> o_cattower.png
+        // auto_feeder -> o_Autofeeder.png
+        // auto_water -> o_autowaterdispenser.png
+        
+        // Let's make the mapping cleaner
+        let filename = '';
+        if (id === 'cat_tower') filename = 'o_cattower.png';
+        else if (id === 'auto_feeder') filename = 'o_Autofeeder.png';
+        else if (id === 'auto_water') filename = 'o_autowaterdispenser.png';
+
+        if (filename) {
+            el.src = `/${filename}`;
+            el.className = `furniture-item ${id.replace('_', '-')}`;
+            gameContainer.appendChild(el);
+        }
+    });
 }
 
 function toggleSettings() {
@@ -712,6 +760,7 @@ function loadGame() {
       state.fun = saveData.state.fun;
       state.coins = saveData.state.coins;
       state.inventory = saveData.state.inventory || [];
+      state.placedItems = saveData.state.placedItems || [];
       
       // Restore inventory item effects
       state.inventory = state.inventory.map(savedItem => {
