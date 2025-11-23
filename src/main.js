@@ -251,6 +251,7 @@ function startGame(isLoaded = false) {
     if (waterBtn) waterBtn.textContent = `물주기 (+${waterAmount})`;
     
     renderInventory();
+    saveGame(); // Immediately save the reset state
   }
   
   state.gameOver = false;
@@ -278,10 +279,21 @@ function gameLoop() {
   state.fun = Math.max(0, state.fun - DECAY_RATE);
 
   // Furniture Effects
+  // Cat Tower: +1 Fun every 2 seconds
   if (state.placedItems.includes('cat_tower')) {
-      // Cat Tower: +1 Fun every second (approx, since gameLoop is DECAY_INTERVAL)
-      // If DECAY_INTERVAL is 1000ms, this works.
-      state.fun = Math.min(100, state.fun + 1);
+      if (coinTick % 2 === 0) { // Sync with coinTick which is approx 1s, so % 2 is 2s
+          state.fun = Math.min(100, state.fun + 1);
+      }
+  }
+
+  // Auto Feeder: +1 Hunger every 1 second
+  if (state.placedItems.includes('auto_feeder')) {
+      state.hunger = Math.min(100, state.hunger + 1);
+  }
+
+  // Auto Water: +1 Thirst every 1 second
+  if (state.placedItems.includes('auto_water')) {
+      state.thirst = Math.min(100, state.thirst + 1);
   }
 
   checkGameOver();
@@ -728,7 +740,7 @@ function quitGame() {
   }
   
   if (restartBtn) {
-    restartBtn.textContent = "새로고침하여 이어하기";
+    restartBtn.textContent = "새로운 게임 시작하기";
     restartBtn.onclick = () => location.reload();
   }
   
