@@ -3,7 +3,7 @@
         "hunger": 10,
         "thirst": 10,
         "fun": 10,
-        "coins": 100
+        "coins": 0
     },
     "actions": {
         "feedAmount": 20,
