@@ -77,6 +77,7 @@ let INVENTORY_SIZE = 3;
 // Game Loop
 let gameInterval;
 let coinInterval;
+let saveInterval;
 
 // Coin Logic State
 let coinTick = 0;
@@ -171,7 +172,7 @@ function init() {
   feedBtn.addEventListener('click', feed);
   waterBtn.addEventListener('click', water);
   gameContainer.addEventListener('click', handleInteraction);
-  restartBtn.addEventListener('click', startGame);
+  restartBtn.addEventListener('click', () => startGame(false));
 
   shopBtn.addEventListener('click', toggleShop);
   closeShopBtn.addEventListener('click', toggleShop);
@@ -188,22 +189,58 @@ function init() {
   document.body.addEventListener('click', playBGM, { once: true });
 
   // Initial Render
-  renderInventory();
-  startGame();
+  if (loadGame()) {
+    console.log('Game loaded from save');
+    renderInventory();
+    updateUI();
+    updateCoinUI();
+    
+    // Re-update button text if upgrades loaded
+    if (hasUpgrade('premium_food')) {
+        feedBtn.textContent = `밥주기 (+${feedAmount})`;
+    }
+    if (hasUpgrade('premium_water')) {
+        waterBtn.textContent = `물주기 (+${waterAmount})`;
+    }
+    
+    startGame(true); // true = isLoaded
+  } else {
+    renderInventory();
+    startGame(false);
+  }
+
+  // Auto-save every 5 seconds
+  if (saveInterval) clearInterval(saveInterval);
+  saveInterval = setInterval(saveGame, 5000);
 }
 
-function startGame() {
-  if (config && config.defaults) {
-    state.hunger = config.defaults.hunger;
-    state.thirst = config.defaults.thirst;
-    state.fun = config.defaults.fun;
-  } else {
-    state.hunger = 100;
-    state.thirst = 100;
-    state.fun = 100;
+function startGame(isLoaded = false) {
+  if (!isLoaded) {
+    if (config && config.defaults) {
+        state.hunger = config.defaults.hunger;
+        state.thirst = config.defaults.thirst;
+        state.fun = config.defaults.fun;
+    } else {
+        state.hunger = 100;
+        state.thirst = 100;
+        state.fun = 100;
+    }
+    state.coins = 0; // Reset coins on restart
+    state.inventory = [];
+    upgrades.clear();
+    // Reset upgrade values
+    if (config && config.actions) {
+        feedAmount = config.actions.feedAmount;
+        waterAmount = config.actions.waterAmount;
+    }
+    // Reset button text
+    if (feedBtn) feedBtn.textContent = `밥주기 (+${feedAmount})`;
+    if (waterBtn) waterBtn.textContent = `물주기 (+${waterAmount})`;
+    
+    renderInventory();
   }
+  
   state.gameOver = false;
-  state.coins = 0; // Reset coins on restart
   coinTick = 0;
   bonusGiven = false;
   
@@ -237,10 +274,23 @@ function checkGameOver() {
     state.gameOver = true;
     clearInterval(gameInterval);
     clearInterval(coinInterval);
+    if (saveInterval) clearInterval(saveInterval);
     
     const finalScoreEl = document.getElementById('final-score');
+    const gameOverTitle = document.querySelector('#game-over h1');
+    const restartBtn = document.getElementById('restart-btn');
+
     if (finalScoreEl) {
       finalScoreEl.textContent = `그동안 적립된 코인은 ${state.coins}개 입니다`;
+    }
+    
+    if (gameOverTitle) {
+      gameOverTitle.textContent = "고양이별로 되돌아 갔습니다";
+    }
+    
+    if (restartBtn) {
+      restartBtn.textContent = "다시 시작";
+      restartBtn.onclick = () => startGame(false);
     }
     
     gameOverScreen.classList.remove('hidden');
@@ -327,6 +377,7 @@ function feed() {
       feedBtn.textContent = `밥주기 (${timeLeft})`;
     }
   }, 1000);
+  saveGame();
 }
 
 function water() {
@@ -353,6 +404,7 @@ function water() {
       waterBtn.textContent = `물주기 (${timeLeft})`;
     }
   }, 1000);
+  saveGame();
 }
 
 function handleInteraction(e) {
@@ -523,6 +575,7 @@ window.buyItem = function(id) {
     renderInventory();
     
     showFloatingText(window.innerWidth / 2, window.innerHeight / 2, `${item.name} 구매!`);
+    saveGame();
   }
 };
 
@@ -574,6 +627,7 @@ function useItem(index) {
   state.inventory.splice(index, 1);
   renderInventory();
   renderShop(); // Update shop UI (in case upgrade status changed)
+  saveGame();
 }
 
 function toggleSettings() {
@@ -605,17 +659,95 @@ function toggleSFX(isChecked) {
 }
 
 function quitGame() {
+  saveGame(); // Save before quitting
   state.gameOver = true;
   clearInterval(gameInterval);
   clearInterval(coinInterval);
+  if (saveInterval) clearInterval(saveInterval);
   bgm.pause();
   
   settingsModal.classList.add('hidden');
   const finalScoreEl = document.getElementById('final-score');
+  const gameOverTitle = document.querySelector('#game-over h1');
+  const restartBtn = document.getElementById('restart-btn');
+  
   if (finalScoreEl) {
-    finalScoreEl.textContent = `그동안 적립된 코인은 ${state.coins}개 입니다`;
+    finalScoreEl.textContent = `현재까지 적립된 코인은 ${state.coins}개 입니다.`;
   }
+  
+  if (gameOverTitle) {
+    gameOverTitle.textContent = "게임이 저장되었습니다";
+  }
+  
+  if (restartBtn) {
+    restartBtn.textContent = "새로고침하여 이어하기";
+    restartBtn.onclick = () => location.reload();
+  }
+  
   gameOverScreen.classList.remove('hidden');
+}
+
+// Save/Load System
+function saveGame() {
+  const saveData = {
+    state: state,
+    upgrades: Array.from(upgrades),
+    timestamp: Date.now()
+  };
+  localStorage.setItem('catGameSave', JSON.stringify(saveData));
+  // console.log('Game saved');
+}
+
+function loadGame() {
+  const savedJSON = localStorage.getItem('catGameSave');
+  if (!savedJSON) return false;
+
+  try {
+    const saveData = JSON.parse(savedJSON);
+    
+    // Restore state
+    if (saveData.state) {
+      state.hunger = saveData.state.hunger;
+      state.thirst = saveData.state.thirst;
+      state.fun = saveData.state.fun;
+      state.coins = saveData.state.coins;
+      state.inventory = saveData.state.inventory || [];
+      
+      // Restore inventory item effects
+      state.inventory = state.inventory.map(savedItem => {
+        const originalItem = shopItems.find(i => i.id === savedItem.id);
+        if (originalItem) {
+          return { ...savedItem, effect: originalItem.effect };
+        }
+        return savedItem;
+      });
+    }
+
+    // Restore upgrades
+    if (saveData.upgrades) {
+      upgrades.clear();
+      saveData.upgrades.forEach(id => {
+        upgrades.add(id);
+        // Re-apply effects
+        const item = shopItems.find(i => i.id === id);
+        if (item && item.type === 'upgrade') {
+           if (item.id === 'premium_food') {
+             feedAmount = item.value;
+           } else if (item.id === 'premium_water') {
+             waterAmount = item.value;
+           }
+        }
+      });
+    }
+    
+    // Offline Progress (Optional - just decay for now or skip)
+    // For a simple version, let's just load the state as is.
+    
+    return true;
+  } catch (e) {
+    console.error('Failed to load save:', e);
+    return false;
+  }
 }
 
 // Start Initialization
