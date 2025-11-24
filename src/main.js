@@ -53,19 +53,26 @@ class SoundPool {
 const popSound = new SoundPool('/Pop1.mp3', 5);
 const coinSound = new SoundPool('/CashRegister.mp3', 5);
 const bgmTracks = ['/Music/MyMusic1.mp3', '/Music/MyMusic2.mp3', '/Music/babyfox1.mp3', '/Music/babyfox2.mp3'];
-const randomTrack = bgmTracks[Math.floor(Math.random() * bgmTracks.length)];
-const bgm = new Audio(randomTrack);
-bgm.loop = true;
+const bgm = new Audio();
+bgm.loop = false;
 bgm.volume = 0.5;
 
+function playNextTrack() {
+  const randomTrack = bgmTracks[Math.floor(Math.random() * bgmTracks.length)];
+  bgm.src = randomTrack;
+  bgm.play().catch(e => console.warn('BGM play failed:', e));
+}
+
+bgm.addEventListener('ended', playNextTrack);
+
 function playBGM() {
-  bgm.play().then(() => {
-    // Autoplay started successfully
-    document.body.removeEventListener('click', playBGM);
-  }).catch(e => {
-    console.log('BGM autoplay blocked, waiting for interaction');
-    // Add listener if not already added (though playBGM is the listener itself, so it's fine)
-  });
+  // If already playing, don't restart
+  if (!bgm.paused) return;
+  
+  playNextTrack();
+  
+  // Remove interaction listener if it was added
+  document.body.removeEventListener('click', playBGM);
 }
 
 // Cooldowns
@@ -272,6 +279,62 @@ function startGame(isLoaded = false) {
   // Coin Generation Loop (Fixed 1s tick)
   if (coinInterval) clearInterval(coinInterval);
   coinInterval = setInterval(generateCoins, 1000);
+
+  // Start Monologue Loop
+  if (monologueTimeout) clearTimeout(monologueTimeout);
+  startMonologueLoop();
+}
+
+let monologueTimeout;
+
+function startMonologueLoop() {
+  if (state.gameOver) return;
+
+  const minInterval = (config && config.monologues && config.monologues.interval.min) || 3000;
+  const maxInterval = (config && config.monologues && config.monologues.interval.max) || 6000;
+  const delay = Math.floor(Math.random() * (maxInterval - minInterval + 1)) + minInterval;
+
+  monologueTimeout = setTimeout(() => {
+    showMonologue();
+    startMonologueLoop();
+  }, delay);
+}
+
+function showMonologue() {
+  if (state.gameOver) return;
+
+  const minStat = Math.min(state.hunger, state.thirst, state.fun);
+
+  if (!config || !config.monologues || !config.monologues.ranges) return;
+
+  const ranges = config.monologues.ranges;
+  let messages = [];
+
+  for (const range of ranges) {
+    if (minStat >= range.min && minStat <= range.max) {
+      messages = range.messages;
+      break;
+    }
+  }
+
+  if (messages.length > 0) {
+    const randomMsg = messages[Math.floor(Math.random() * messages.length)];
+    showMonologuePopup(randomMsg);
+  }
+}
+
+function showMonologuePopup(text) {
+  const el = document.createElement('div');
+  el.className = 'monologue-popup';
+  el.textContent = text;
+  
+  document.body.appendChild(el);
+  
+  const duration = (config && config.monologues && config.monologues.duration) || 1000;
+
+  setTimeout(() => {
+    el.remove();
+  }, duration);
 }
 
 function gameLoop() {
@@ -312,6 +375,7 @@ function checkGameOver() {
     state.gameOver = true;
     clearInterval(gameInterval);
     clearInterval(coinInterval);
+    if (monologueTimeout) clearTimeout(monologueTimeout);
     if (saveInterval) clearInterval(saveInterval);
     
     const finalScoreEl = document.getElementById('final-score');
@@ -723,7 +787,11 @@ function updateVolume(value) {
 
 function toggleBGM(isChecked) {
   if (isChecked) {
-    bgm.play().catch(e => console.warn('BGM play failed:', e));
+    if (!bgm.src) {
+      playNextTrack();
+    } else {
+      bgm.play().catch(e => console.warn('BGM play failed:', e));
+    }
   } else {
     bgm.pause();
   }
@@ -739,6 +807,7 @@ function quitGame() {
   state.gameOver = true;
   clearInterval(gameInterval);
   clearInterval(coinInterval);
+  if (monologueTimeout) clearTimeout(monologueTimeout);
   if (saveInterval) clearInterval(saveInterval);
   bgm.pause();
   

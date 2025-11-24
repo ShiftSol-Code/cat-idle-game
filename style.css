@@ -1014,3 +1014,51 @@ input[type="range"] {
   width: 80px;
   height: auto;
 }
+
+/* Monologue Popup */
+/* 직접 대사창 위치 수정 */
+.monologue-popup {
+  position: fixed;
+  top: 600px;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background-color: rgba(255, 255, 255, 0.9);
+  color: #333;
+  padding: 15px 30px;
+  border-radius: 50px;
+  font-size: 1.5rem;
+  font-weight: bold;
+  z-index: 2000;
+  pointer-events: none;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+  border: 3px solid #ff9a9e;
+  animation: popInOut 1s ease-in-out forwards;
+  text-align: center;
+  white-space: nowrap;
+}
+
+@keyframes popInOut {
+  0% {
+    opacity: 0;
+    transform: translate(-50%, -40%) scale(0.8);
+  }
+
+  15% {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1.1);
+  }
+
+  25% {
+    transform: translate(-50%, -50%) scale(1);
+  }
+
+  85% {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1);
+  }
+
+  100% {
+    opacity: 0;
+    transform: translate(-50%, -60%) scale(0.9);
+  }
+}
